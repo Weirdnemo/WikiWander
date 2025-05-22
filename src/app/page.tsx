@@ -326,15 +326,15 @@ export default function WikiWanderPage() {
       <CardContent className="space-y-6">
         <div className="space-y-2" ref={startInputRef}>
           <Label htmlFor="start-article">Start Article</Label>
-          <div className="relative flex items-center gap-2">
+          <div className="relative">
             <Input
               id="start-article"
-              placeholder="Enter start article or get random"
+              placeholder="Start article or random"
               value={startInput}
               onChange={(e) => handleInputChange('start', e.target.value)}
               onFocus={() => startInput.length > 2 && setShowStartSuggestions(true)}
               disabled={gameState.isLoading}
-              className="w-full flex-grow min-w-0"
+              className="min-w-0"
             />
              {renderSuggestions('start')}
           </div>
@@ -352,15 +352,15 @@ export default function WikiWanderPage() {
         
         <div className="space-y-2" ref={targetInputRef}>
           <Label htmlFor="target-article">Target Article</Label>
-           <div className="relative flex items-center gap-2">
+           <div className="relative">
             <Input
               id="target-article"
-              placeholder="Enter target article or get random"
+              placeholder="Target article or random"
               value={targetInput}
               onChange={(e) => handleInputChange('target', e.target.value)}
               onFocus={() => targetInput.length > 2 && setShowTargetSuggestions(true)}
               disabled={gameState.isLoading}
-              className="w-full flex-grow min-w-0"
+              className="min-w-0"
             />
             {renderSuggestions('target')}
           </div>
