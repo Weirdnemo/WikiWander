@@ -525,7 +525,7 @@ export default function WikiWanderPage() {
             </div>
           </SidebarHeader>
           <SidebarContent className="p-4 space-y-6 flex-grow">
-            <ScrollArea className="h-full pr-2">
+            <ScrollArea className="h-full pr-3">
               {!gameState.isGameActive && !gameState.isGameWon ? renderGameSetup() : null}
               {(gameState.isGameActive || gameState.isGameWon) && ( /* Show stats if game is active OR won (for overlay) */
                 <>
@@ -592,3 +592,4 @@ export default function WikiWanderPage() {
     </SidebarProvider>
   );
 }
+
