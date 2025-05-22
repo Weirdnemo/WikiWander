@@ -329,7 +329,7 @@ export default function WikiWanderPage() {
           <div className="relative">
             <Input
               id="start-article"
-              placeholder="Start article or random"
+              placeholder="Start article"
               value={startInput}
               onChange={(e) => handleInputChange('start', e.target.value)}
               onFocus={() => startInput.length > 2 && setShowStartSuggestions(true)}
@@ -355,7 +355,7 @@ export default function WikiWanderPage() {
            <div className="relative">
             <Input
               id="target-article"
-              placeholder="Target article or random"
+              placeholder="Target article"
               value={targetInput}
               onChange={(e) => handleInputChange('target', e.target.value)}
               onFocus={() => targetInput.length > 2 && setShowTargetSuggestions(true)}
