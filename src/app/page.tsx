@@ -116,7 +116,7 @@ export default function WikiWanderPage() {
     
     const article: WikiArticle = {
       title: summary.titles.normalized,
-      displayTitle: summary.titles.display,
+      displayTitle: summary.titles.normalized, // Use normalized title for clean display
       summary: summary.description || summary.extract?.substring(0, 150) + '...',
     };
 
