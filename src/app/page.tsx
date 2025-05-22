@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -536,7 +537,7 @@ export default function WikiWanderPage() {
               <h1 className="text-2xl font-semibold">WikiWander</h1>
             </div>
           </SidebarHeader>
-          <SidebarContent className="p-4 space-y-6 flex-grow"> {/* Removed ScrollArea */}
+          <SidebarContent className="p-4 space-y-6 flex-grow">
            
               {!gameState.isGameActive && !gameState.isGameWon ? renderGameSetup() : null}
               {(gameState.isGameActive || gameState.isGameWon) && ( 
@@ -553,7 +554,7 @@ export default function WikiWanderPage() {
             
           </SidebarContent>
           <SidebarFooter className="p-4 border-t">
-            <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} WikiWander. Powered by Wikipedia.</p>
+            <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} WikiWander. Made by Weirdnemo</p>
           </SidebarFooter>
         </Sidebar>
 
