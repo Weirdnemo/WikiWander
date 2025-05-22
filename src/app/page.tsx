@@ -338,7 +338,7 @@ export default function WikiWanderPage() {
                 onChange={(e) => handleInputChange('start', e.target.value)}
                 onFocus={() => startInput.length > 2 && setShowStartSuggestions(true)}
                 disabled={gameState.isLoading}
-                className="flex-grow"
+                className="flex-grow min-w-0"
               />
               <Button 
                 variant="outline" 
@@ -369,7 +369,7 @@ export default function WikiWanderPage() {
                 onChange={(e) => handleInputChange('target', e.target.value)}
                 onFocus={() => targetInput.length > 2 && setShowTargetSuggestions(true)}
                 disabled={gameState.isLoading}
-                className="flex-grow"
+                className="flex-grow min-w-0"
               />
               <Button 
                 variant="outline" 
