@@ -321,7 +321,7 @@ export default function WikiWanderPage() {
   };
 
   const renderGameSetup = () => (
-    <Card className="shadow-lg">
+    <Card className="shadow-xl rounded-xl">
       <CardHeader>
         <CardTitle className="text-2xl">Game Setup</CardTitle>
         <CardDescription>Choose your start and target Wikipedia articles.</CardDescription>
@@ -446,7 +446,7 @@ export default function WikiWanderPage() {
   );
   
   const renderGameStats = () => (
-    <Card className="shadow-md">
+    <Card className="shadow-md rounded-lg">
       <CardHeader>
         <CardTitle className="text-xl">Game Stats</CardTitle>
       </CardHeader>
@@ -469,14 +469,14 @@ export default function WikiWanderPage() {
           <span className="font-semibold text-accent">{formatTime(gameState.elapsedTime)}</span>
         </div>
         {gameState.hint && (
-          <Card className="mt-2 bg-secondary/50 p-3 border border-border">
+          <Card className="mt-2 bg-secondary/50 p-3 border border-border rounded-md">
             <CardDescription className="text-xs text-secondary-foreground">
               <Info size={14} className="inline mr-1"/> {gameState.hint}
             </CardDescription>
           </Card>
         )}
          {gameState.errorMessage && (
-          <Card className="mt-2 bg-destructive/10 border-destructive p-3">
+          <Card className="mt-2 bg-destructive/10 border-destructive p-3 rounded-md">
             <CardDescription className="text-xs text-destructive"> {/* Ensure destructive-foreground is used if needed based on theme */}
                <AlertTriangle size={14} className="inline mr-1"/> {gameState.errorMessage}
             </CardDescription>
@@ -487,7 +487,7 @@ export default function WikiWanderPage() {
   );
 
   const renderHistory = () => (
-    <Card className="shadow-md mt-4">
+    <Card className="shadow-md mt-4 rounded-lg">
         <CardHeader>
             <CardTitle className="text-xl flex items-center"><History className="mr-2" /> Navigation History</CardTitle>
         </CardHeader>
@@ -562,7 +562,7 @@ export default function WikiWanderPage() {
             </div>
             
             {gameState.isGameWon && (
-              <Card className="mb-4 bg-primary/5 border-primary/50 shadow-lg"> {/* Adjusted colors for softer win screen */}
+              <Card className="mb-4 bg-primary/5 border-primary/50 shadow-xl rounded-xl"> {/* Adjusted colors for softer win screen */}
                 <CardHeader className="items-center text-center">
                   <CheckCircle2 className="h-16 w-16 text-primary mb-2" />
                   <CardTitle className="text-3xl text-primary">You Won!</CardTitle>
@@ -583,7 +583,7 @@ export default function WikiWanderPage() {
             )}
 
             {(!gameState.isGameActive && !gameState.isGameWon && !gameState.isLoading) && (
-                 <Card className="flex-grow flex flex-col items-center justify-center text-center p-8 bg-card shadow-xl">
+                 <Card className="flex-grow flex flex-col items-center justify-center text-center p-8 bg-card shadow-xl rounded-xl">
                     <CardHeader>
                         <Target size={64} className="mx-auto text-primary mb-4" />
                         <CardTitle className="text-3xl mb-2">Welcome to WikiWander!</CardTitle>
