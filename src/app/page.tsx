@@ -338,8 +338,14 @@ export default function WikiWanderPage() {
             />
              {renderSuggestions('start')}
           </div>
-          <Button variant="secondary" onClick={() => handleSetArticle('start')} disabled={gameState.isLoading} className="w-full mt-2">
-            <Dices className="mr-2 h-4 w-4" /> Random Start Article
+          <Button 
+            variant="secondary" 
+            onClick={() => handleSetArticle('start')} 
+            disabled={gameState.isLoading} 
+            className="w-full mt-2 whitespace-normal h-auto"
+          >
+            <Dices className="mr-2 h-4 w-4 flex-shrink-0" /> 
+            <span className="flex-grow text-center">Random Start Article</span>
           </Button>
           {gameState.startArticle && <p className="text-sm text-muted-foreground mt-1">Selected: {gameState.startArticle.displayTitle}</p>}
         </div>
@@ -358,8 +364,14 @@ export default function WikiWanderPage() {
             />
             {renderSuggestions('target')}
           </div>
-          <Button variant="secondary" onClick={() => handleSetArticle('target')} disabled={gameState.isLoading} className="w-full mt-2">
-            <Dices className="mr-2 h-4 w-4" /> Random Target Article
+          <Button 
+            variant="secondary" 
+            onClick={() => handleSetArticle('target')} 
+            disabled={gameState.isLoading} 
+            className="w-full mt-2 whitespace-normal h-auto"
+          >
+            <Dices className="mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="flex-grow text-center">Random Target Article</span>
           </Button>
           {gameState.targetArticle && <p className="text-sm text-muted-foreground mt-1">Selected: {gameState.targetArticle.displayTitle}</p>}
         </div>
@@ -524,7 +536,7 @@ export default function WikiWanderPage() {
               <h1 className="text-2xl font-semibold">WikiWander</h1>
             </div>
           </SidebarHeader>
-          <SidebarContent className="p-4 space-y-6 flex-grow">
+          <SidebarContent className="p-4 space-y-6 flex-grow"> {/* Removed ScrollArea */}
            
               {!gameState.isGameActive && !gameState.isGameWon ? renderGameSetup() : null}
               {(gameState.isGameActive || gameState.isGameWon) && ( 
