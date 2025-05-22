@@ -45,8 +45,8 @@
 git clone https://github.com/Weirdnemo/WikiWander.git
 cd WikiWander
 
-
+```
 This project is licensed under the MIT License.
-Wikipedia content is used under CC BY-SA 3.0.
+Wikipedia content is used under [CC BY-SA 3.0.](https://creativecommons.org/licenses/by-sa/3.0/)
 
 Created by @Weirdnemo
