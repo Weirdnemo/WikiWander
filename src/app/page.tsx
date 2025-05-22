@@ -102,7 +102,7 @@ export default function WikiWanderPage() {
       if (!summary) {
         toast({ title: "Error", description: `Could not find article: ${title}`, variant: "destructive" });
         setGameState(prev => ({ ...prev, isLoading: false, errorMessage: `Article "${title}" not found.` }));
-        if (type === 'start') setStartInput(title); else setTargetInput(title); // Keep user input
+        if (type === 'start') setStartInput(title); else setTargetInput(title);
         return;
       }
     } else {
@@ -159,7 +159,7 @@ export default function WikiWanderPage() {
   const handleInputChange = (type: 'start' | 'target', value: string) => {
     if (type === 'start') {
       setStartInput(value);
-      if (value.length > 2) { // Only search if more than 2 chars
+      if (value.length > 2) { 
         const timerId = setTimeout(() => debouncedSearch('start', value), DEBOUNCE_DELAY);
         return () => clearTimeout(timerId);
       } else {
@@ -330,26 +330,15 @@ export default function WikiWanderPage() {
         <div className="space-y-2" ref={startInputRef}>
           <Label htmlFor="start-article">Start Article</Label>
           <div className="relative">
-            <div className="flex space-x-2">
-              <Input
-                id="start-article"
-                placeholder="Enter start article or get random"
-                value={startInput}
-                onChange={(e) => handleInputChange('start', e.target.value)}
-                onFocus={() => startInput.length > 2 && setShowStartSuggestions(true)}
-                disabled={gameState.isLoading}
-                className="flex-grow min-w-0"
-              />
-              <Button 
-                variant="outline" 
-                onClick={() => handleSetArticle('start', startInput)} 
-                disabled={gameState.isLoading || !startInput || !!gameState.startArticle} 
-                className="whitespace-nowrap flex-shrink-0"
-                aria-label="Set Start Article"
-              >
-                Set
-              </Button>
-            </div>
+            <Input
+              id="start-article"
+              placeholder="Enter start article or get random"
+              value={startInput}
+              onChange={(e) => handleInputChange('start', e.target.value)}
+              onFocus={() => startInput.length > 2 && setShowStartSuggestions(true)}
+              disabled={gameState.isLoading}
+              className="w-full"
+            />
             {renderSuggestions('start')}
           </div>
           <Button variant="secondary" onClick={() => handleSetArticle('start')} disabled={gameState.isLoading} className="w-full mt-2">
@@ -361,26 +350,15 @@ export default function WikiWanderPage() {
         <div className="space-y-2" ref={targetInputRef}>
           <Label htmlFor="target-article">Target Article</Label>
            <div className="relative">
-            <div className="flex space-x-2">
-              <Input
-                id="target-article"
-                placeholder="Enter target article or get random"
-                value={targetInput}
-                onChange={(e) => handleInputChange('target', e.target.value)}
-                onFocus={() => targetInput.length > 2 && setShowTargetSuggestions(true)}
-                disabled={gameState.isLoading}
-                className="flex-grow min-w-0"
-              />
-              <Button 
-                variant="outline" 
-                onClick={() => handleSetArticle('target', targetInput)} 
-                disabled={gameState.isLoading || !targetInput || !!gameState.targetArticle} 
-                className="whitespace-nowrap flex-shrink-0"
-                aria-label="Set Target Article"
-              >
-                Set
-              </Button>
-            </div>
+            <Input
+              id="target-article"
+              placeholder="Enter target article or get random"
+              value={targetInput}
+              onChange={(e) => handleInputChange('target', e.target.value)}
+              onFocus={() => targetInput.length > 2 && setShowTargetSuggestions(true)}
+              disabled={gameState.isLoading}
+              className="w-full"
+            />
             {renderSuggestions('target')}
           </div>
           <Button variant="secondary" onClick={() => handleSetArticle('target')} disabled={gameState.isLoading} className="w-full mt-2">
@@ -477,7 +455,7 @@ export default function WikiWanderPage() {
         )}
          {gameState.errorMessage && (
           <Card className="mt-2 bg-destructive/10 border-destructive p-3 rounded-md">
-            <CardDescription className="text-xs text-destructive"> {/* Ensure destructive-foreground is used if needed based on theme */}
+            <CardDescription className="text-xs text-destructive">
                <AlertTriangle size={14} className="inline mr-1"/> {gameState.errorMessage}
             </CardDescription>
           </Card>
@@ -502,11 +480,7 @@ export default function WikiWanderPage() {
                                 <span className={cn(index === gameState.history.length - 1 ? 'font-semibold text-foreground' : '', 'hover:text-primary cursor-pointer')}
                                       title={article.displayTitle}
                                       onClick={() => {
-                                        if (index < gameState.history.length -1 && gameState.isGameActive) {
-                                            // Allow navigating back in history for a penalty or specific rule - not implemented yet
-                                            // For now, just an example of interaction
-                                            // handleNavigate(article.title); // This would need careful state management if implemented
-                                        }
+                                        // Future: Allow navigating back in history
                                       }}>
                                     {article.displayTitle}
                                 </span>
@@ -523,7 +497,7 @@ export default function WikiWanderPage() {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen bg-background">
-        <Sidebar side="left" variant="sidebar" collapsible="icon" className="shadow-xl">
+        <Sidebar side="left" variant="sidebar" collapsible="icon" className="shadow-xl border-r-0">
           <SidebarHeader className="p-4 border-b">
             <div className="flex items-center gap-2">
               <Target className="h-8 w-8 text-primary" />
@@ -531,14 +505,14 @@ export default function WikiWanderPage() {
             </div>
           </SidebarHeader>
           <SidebarContent className="p-4 space-y-6 flex-grow">
-            <ScrollArea className="h-full pr-2"> {/* Added pr-2 for scrollbar spacing */}
+            <ScrollArea className="h-full pr-2">
               {!gameState.isGameActive && !gameState.isGameWon ? renderGameSetup() : null}
               {(gameState.isGameActive || gameState.isGameWon) && (
                 <>
                   {renderGameStats()}
                   {renderHistory()}
                   {!gameState.isGameWon && gameState.isGameActive && (
-                    <div className="mt-6 sticky bottom-0 py-2 bg-sidebar rounded-md"> {/* Added rounded-md */}
+                    <div className="mt-6 sticky bottom-0 py-2 bg-sidebar rounded-md">
                         {renderGamePlayControls()}
                     </div>
                   )}
@@ -561,28 +535,28 @@ export default function WikiWanderPage() {
                 <SidebarTrigger />
             </div>
             
-            {gameState.isGameWon && (
-              <Card className="mb-4 bg-primary/5 border-primary/50 shadow-xl rounded-xl"> {/* Adjusted colors for softer win screen */}
-                <CardHeader className="items-center text-center">
-                  <CheckCircle2 className="h-16 w-16 text-primary mb-2" />
-                  <CardTitle className="text-3xl text-primary">You Won!</CardTitle>
-                  <CardDescription className="text-foreground/80">
-                    You successfully navigated from <span className="font-semibold">{gameState.startArticle?.displayTitle}</span> to <span className="font-semibold">{gameState.targetArticle?.displayTitle}</span>.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <p>Clicks: <span className='font-semibold text-accent'>{gameState.clicks}</span></p>
-                  <p>Time: <span className='font-semibold text-accent'>{formatTime(gameState.elapsedTime)}</span></p>
-                </CardContent>
-                <CardFooter className="flex justify-center">
-                  <Button onClick={restartGame} size="lg">
-                    <RotateCcw className="mr-2 h-5 w-5" /> Play Again
-                  </Button>
-                </CardFooter>
-              </Card>
-            )}
-
-            {(!gameState.isGameActive && !gameState.isGameWon && !gameState.isLoading) && (
+            {gameState.isGameWon ? (
+              <div className="flex-grow flex items-center justify-center">
+                <Card className="bg-primary/5 border-primary/50 shadow-xl rounded-xl w-full max-w-md">
+                  <CardHeader className="items-center text-center">
+                    <CheckCircle2 className="h-16 w-16 text-primary mb-2" />
+                    <CardTitle className="text-3xl text-primary">You Won!</CardTitle>
+                    <CardDescription className="text-foreground/80">
+                      You successfully navigated from <span className="font-semibold">{gameState.startArticle?.displayTitle}</span> to <span className="font-semibold">{gameState.targetArticle?.displayTitle}</span>.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p>Clicks: <span className='font-semibold text-accent'>{gameState.clicks}</span></p>
+                    <p>Time: <span className='font-semibold text-accent'>{formatTime(gameState.elapsedTime)}</span></p>
+                  </CardContent>
+                  <CardFooter className="flex justify-center">
+                    <Button onClick={restartGame} size="lg">
+                      <RotateCcw className="mr-2 h-5 w-5" /> Play Again
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
+            ) : (!gameState.isGameActive && !gameState.isGameWon && !gameState.isLoading) ? (
                  <Card className="flex-grow flex flex-col items-center justify-center text-center p-8 bg-card shadow-xl rounded-xl">
                     <CardHeader>
                         <Target size={64} className="mx-auto text-primary mb-4" />
@@ -596,26 +570,21 @@ export default function WikiWanderPage() {
                         <p className="text-sm text-muted-foreground">Good luck, and happy wandering!</p>
                     </CardContent>
                 </Card>
-            )}
-            
-             {gameState.isLoading && !gameState.currentArticle && !gameState.isGameActive && (
+            ) : gameState.isLoading && !gameState.currentArticle && !gameState.isGameActive ? (
                 <div className="flex-grow flex flex-col items-center justify-center">
                     <Loader2 className="h-16 w-16 animate-spin text-primary" />
                     <p className="mt-4 text-muted-foreground">Loading game...</p>
                 </div>
-            )}
-
-            {(gameState.isGameActive || (gameState.isLoading && gameState.currentArticle)) && !gameState.isGameWon && (
+            ) : (gameState.isGameActive || (gameState.isLoading && gameState.currentArticle)) && !gameState.isGameWon ? (
               <ArticleDisplay
                 article={gameState.currentArticle}
                 isLoading={gameState.isLoading && !gameState.currentArticle?.htmlContent} 
                 onNavigate={handleNavigate}
               />
-            )}
+            ) : null}
           </div>
         </SidebarInset>
       </div>
     </SidebarProvider>
   );
 }
-
