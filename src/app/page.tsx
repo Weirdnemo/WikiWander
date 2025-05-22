@@ -23,7 +23,8 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { AlertTriangle, CheckCircle2, Dices, Flag, Lightbulb, Loader2, Play, RotateCcw, Target, History, Info, Search } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertTriangle, CheckCircle2, Dices, Flag, Lightbulb, Loader2, Play, RotateCcw, Target, History, Info } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -244,13 +245,9 @@ export default function WikiWanderPage() {
     if (newArticleContent.title === gameState.targetArticle?.title) {
       stopTimer();
       setGameState(prev => ({ ...prev, isGameWon: true, isGameActive: false }));
-      toast({
-        title: "Congratulations!",
-        description: `You reached ${gameState.targetArticle?.displayTitle} in ${newClicks} clicks and ${formatTime(elapsedTime)}.`,
-        duration: 10000,
-      });
+      // Toast for win is now handled by the AlertDialog
     }
-  }, [gameState.isGameActive, gameState.isLoading, gameState.clicks, gameState.targetArticle?.title, gameState.history, stopTimer, elapsedTime, toast, formatTime]);
+  }, [gameState.isGameActive, gameState.isLoading, gameState.clicks, gameState.targetArticle?.title, gameState.history, stopTimer, formatTime]);
 
   const requestHint = async () => {
     if (!gameState.currentArticle || !gameState.targetArticle || gameState.isLoadingHint) return;
@@ -493,11 +490,34 @@ export default function WikiWanderPage() {
     </Card>
   );
 
+  const renderWinDialog = () => (
+    <AlertDialog open={gameState.isGameWon} onOpenChange={(open) => { if (!open) restartGame(); }}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader className="items-center text-center">
+          <CheckCircle2 className="h-16 w-16 text-primary mb-2" />
+          <AlertDialogTitle className="text-3xl text-primary">You Won!</AlertDialogTitle>
+          <AlertDialogDescription className="text-foreground/80">
+            You successfully navigated from <span className="font-semibold">{gameState.startArticle?.displayTitle}</span> to <span className="font-semibold">{gameState.targetArticle?.displayTitle}</span>.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="text-center space-y-1 my-4">
+          <p>Clicks: <span className='font-semibold text-accent'>{gameState.clicks}</span></p>
+          <p>Time: <span className='font-semibold text-accent'>{formatTime(gameState.elapsedTime)}</span></p>
+        </div>
+        <AlertDialogFooter className="sm:justify-center">
+          <AlertDialogAction onClick={restartGame} className="w-full sm:w-auto">
+             <RotateCcw className="mr-2 h-5 w-5" /> Play Again
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
 
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen bg-background">
-        <Sidebar side="left" variant="sidebar" collapsible="icon" className="shadow-xl border-r-0">
+        <Sidebar side="left" variant="sidebar" collapsible="icon" className="shadow-xl !border-r-0">
           <SidebarHeader className="p-4 border-b">
             <div className="flex items-center gap-2">
               <Target className="h-8 w-8 text-primary" />
@@ -507,7 +527,7 @@ export default function WikiWanderPage() {
           <SidebarContent className="p-4 space-y-6 flex-grow">
             <ScrollArea className="h-full pr-2">
               {!gameState.isGameActive && !gameState.isGameWon ? renderGameSetup() : null}
-              {(gameState.isGameActive || gameState.isGameWon) && (
+              {(gameState.isGameActive || gameState.isGameWon) && ( /* Show stats if game is active OR won (for overlay) */
                 <>
                   {renderGameStats()}
                   {renderHistory()}
@@ -526,7 +546,7 @@ export default function WikiWanderPage() {
         </Sidebar>
 
         <SidebarInset>
-          <div className="flex flex-col h-screen p-2 md:p-4">
+          <div className="flex flex-col h-screen p-2 md:p-4 relative"> {/* Added relative for overlay positioning */}
             <div className="md:hidden p-2 border-b mb-2 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                     <Target className="h-6 w-6 text-primary" />
@@ -535,28 +555,8 @@ export default function WikiWanderPage() {
                 <SidebarTrigger />
             </div>
             
-            {gameState.isGameWon ? (
-              <div className="flex-grow flex items-center justify-center">
-                <Card className="bg-primary/5 border-primary/50 shadow-xl rounded-xl w-full max-w-md">
-                  <CardHeader className="items-center text-center">
-                    <CheckCircle2 className="h-16 w-16 text-primary mb-2" />
-                    <CardTitle className="text-3xl text-primary">You Won!</CardTitle>
-                    <CardDescription className="text-foreground/80">
-                      You successfully navigated from <span className="font-semibold">{gameState.startArticle?.displayTitle}</span> to <span className="font-semibold">{gameState.targetArticle?.displayTitle}</span>.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p>Clicks: <span className='font-semibold text-accent'>{gameState.clicks}</span></p>
-                    <p>Time: <span className='font-semibold text-accent'>{formatTime(gameState.elapsedTime)}</span></p>
-                  </CardContent>
-                  <CardFooter className="flex justify-center">
-                    <Button onClick={restartGame} size="lg">
-                      <RotateCcw className="mr-2 h-5 w-5" /> Play Again
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </div>
-            ) : (!gameState.isGameActive && !gameState.isGameWon && !gameState.isLoading) ? (
+            {/* Main content area: Welcome, Loading, or Article Display */}
+            {(!gameState.isGameActive && !gameState.isGameWon && !gameState.isLoading) ? (
                  <Card className="flex-grow flex flex-col items-center justify-center text-center p-8 bg-card shadow-xl rounded-xl">
                     <CardHeader>
                         <Target size={64} className="mx-auto text-primary mb-4" />
@@ -575,13 +575,17 @@ export default function WikiWanderPage() {
                     <Loader2 className="h-16 w-16 animate-spin text-primary" />
                     <p className="mt-4 text-muted-foreground">Loading game...</p>
                 </div>
-            ) : (gameState.isGameActive || (gameState.isLoading && gameState.currentArticle)) && !gameState.isGameWon ? (
+            ) : (gameState.isGameActive || gameState.isGameWon || (gameState.isLoading && gameState.currentArticle)) ? (
               <ArticleDisplay
                 article={gameState.currentArticle}
                 isLoading={gameState.isLoading && !gameState.currentArticle?.htmlContent} 
                 onNavigate={handleNavigate}
               />
             ) : null}
+
+            {/* "You Won!" Dialog Overlay */}
+            {renderWinDialog()}
+            
           </div>
         </SidebarInset>
       </div>
