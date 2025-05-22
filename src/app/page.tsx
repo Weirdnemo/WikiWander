@@ -116,7 +116,7 @@ export default function WikiWanderPage() {
     
     const article: WikiArticle = {
       title: summary.titles.normalized,
-      displayTitle: summary.titles.normalized, // Use normalized title for clean display
+      displayTitle: summary.titles.normalized, 
       summary: summary.description || summary.extract?.substring(0, 150) + '...',
     };
 
@@ -344,7 +344,7 @@ export default function WikiWanderPage() {
                 variant="outline" 
                 onClick={() => handleSetArticle('start', startInput)} 
                 disabled={gameState.isLoading || !startInput || !!gameState.startArticle} 
-                className="whitespace-nowrap"
+                className="whitespace-nowrap flex-shrink-0"
                 aria-label="Set Start Article"
               >
                 Set
@@ -375,7 +375,7 @@ export default function WikiWanderPage() {
                 variant="outline" 
                 onClick={() => handleSetArticle('target', targetInput)} 
                 disabled={gameState.isLoading || !targetInput || !!gameState.targetArticle} 
-                className="whitespace-nowrap"
+                className="whitespace-nowrap flex-shrink-0"
                 aria-label="Set Target Article"
               >
                 Set
