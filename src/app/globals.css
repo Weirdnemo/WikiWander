@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -102,6 +103,26 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Removed explicit font-family to allow Next/Font to take over */
+  }
+}
+
+/* Custom styles for Wikipedia article links */
+@layer components {
+  .prose .internal-wiki-link, .wikipedia-content .internal-wiki-link {
+    @apply text-primary hover:underline cursor-pointer;
+  }
+  .prose .non-article-wiki-link, .wikipedia-content .non-article-wiki-link {
+    @apply text-muted-foreground hover:text-foreground hover:underline cursor-alias; /* Indicates external-like behavior */
+  }
+  .prose .external-wiki-link, .wikipedia-content .external-wiki-link {
+    @apply text-accent hover:underline; /* External links in accent color */
+  }
+   .prose .citation-wiki-link, .wikipedia-content .citation-wiki-link {
+    @apply text-sm text-primary/70 hover:text-primary hover:underline; /* Citations, less prominent */
+  }
+
+  /* Default link styling within prose, if not overridden by specific classes above */
+  .prose a:not(.internal-wiki-link):not(.non-article-wiki-link):not(.external-wiki-link):not(.citation-wiki-link) {
+     /* Standard link color or inherit from prose */
   }
 }

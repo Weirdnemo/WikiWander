@@ -1,3 +1,4 @@
+
 import type { WikipediaArticleSummary, WikipediaArticleParseResult, WikiArticle } from './types';
 
 const WIKIPEDIA_API_BASE_URL = 'https://en.wikipedia.org/api/rest_v1';
@@ -19,7 +20,12 @@ export async function fetchRandomArticleSummary(): Promise<WikipediaArticleSumma
             const retryData: WikipediaArticleSummary = await retryResponse.json();
             if (retryData.type === "standard") return retryData;
         }
-        return data; // Return original if retry fails or is not standard
+        // Fallback to the original if retry fails or is not standard,
+        // but prefer standard articles if possible to avoid issues with special pages.
+        if (data.type !== "standard") {
+          console.warn("Fetched a non-standard random article:", data.title);
+        }
+        return data; 
     }
     return data;
   } catch (error) {
@@ -31,15 +37,13 @@ export async function fetchRandomArticleSummary(): Promise<WikipediaArticleSumma
 // Fetches the HTML content of a Wikipedia article
 export async function fetchArticleContent(title: string): Promise<WikiArticle> {
   try {
-    // Use the parse API for HTML content
-    // formatversion=2 provides a simpler JSON structure for 'text'
     const params = new URLSearchParams({
       action: 'parse',
       page: title,
       prop: 'text',
       format: 'json',
-      formatversion: '2', // Ensures text is directly under parse.text
-      origin: '*', // Required for CORS
+      formatversion: '2', 
+      origin: '*', 
     });
     const response = await fetch(`${WIKIPEDIA_PARSE_API_URL}?${params.toString()}`);
     if (!response.ok) {
@@ -48,16 +52,14 @@ export async function fetchArticleContent(title: string): Promise<WikiArticle> {
     const data: WikipediaArticleParseResult = await response.json();
     if (data.parse && data.parse.text) {
       return {
-        title: data.parse.title, // Normalized title from API
-        displayTitle: data.parse.title, // Use API title for display
+        title: data.parse.title, 
+        displayTitle: data.parse.title, 
         htmlContent: data.parse.text,
       };
-    } else if (data.parse && (data.parse as any).error) { // Check for API-level errors
+    } else if (data.parse && (data.parse as any).error) { 
         throw new Error(`API error for "${title}": ${(data.parse as any).error.info}`);
     }
      else {
-      // Handle cases where the page might be a redirect or missing
-      // For simplicity, we'll treat it as content not found
       const summaryResponse = await fetch(`${WIKIPEDIA_API_BASE_URL}/page/summary/${encodeURIComponent(title)}`);
       if (summaryResponse.ok) {
         const summaryData: WikipediaArticleSummary = await summaryResponse.json();
@@ -86,7 +88,6 @@ export async function fetchArticleSummary(title: string): Promise<WikipediaArtic
   try {
     const response = await fetch(`${WIKIPEDIA_API_BASE_URL}/page/summary/${encodeURIComponent(title)}`);
     if (!response.ok) {
-      // If 404, it could be a page that doesn't exist or a redirect the summary API doesn't handle well.
       if (response.status === 404) {
         console.warn(`Summary for "${title}" not found (404). It may not exist or is a redirect issue.`);
         return null;
@@ -99,5 +100,34 @@ export async function fetchArticleSummary(title: string): Promise<WikipediaArtic
   } catch (error) {
     console.error(`Error fetching article summary for "${title}":`, error);
     return null;
+  }
+}
+
+// Searches for articles based on a search term
+export async function searchArticles(searchTerm: string): Promise<string[]> {
+  if (!searchTerm.trim()) {
+    return [];
+  }
+  try {
+    const params = new URLSearchParams({
+      action: 'opensearch',
+      search: searchTerm,
+      limit: '5', // Limit to 5 suggestions
+      namespace: '0', // Search only in the main namespace (articles)
+      format: 'json',
+      origin: '*',
+    });
+    const response = await fetch(`${WIKIPEDIA_PARSE_API_URL}?${params.toString()}`);
+    if (!response.ok) {
+      console.error('Failed to search articles:', response.statusText);
+      return [];
+    }
+    const data = await response.json();
+    // The opensearch API returns an array: [searchTerm, [titles], [descriptions], [urls]]
+    // We are interested in the titles array (index 1)
+    return data[1] || [];
+  } catch (error) {
+    console.error('Error searching articles:', error);
+    return [];
   }
 }

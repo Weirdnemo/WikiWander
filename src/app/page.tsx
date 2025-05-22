@@ -1,8 +1,9 @@
+
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { GameState, WikiArticle, WikipediaArticleSummary } from '@/lib/types';
-import { fetchRandomArticleSummary, fetchArticleContent, fetchArticleSummary } from '@/lib/wikipedia';
+import { fetchRandomArticleSummary, fetchArticleContent, fetchArticleSummary, searchArticles } from '@/lib/wikipedia';
 import { getHint } from '@/ai/flows/get-hint';
 import { ArticleDisplay } from '@/components/article-display';
 import { Button } from '@/components/ui/button';
@@ -22,13 +23,14 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { AlertTriangle, CheckCircle2, Dices, Flag, Lightbulb, Loader2, Play, RotateCcw, Target, History, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Dices, Flag, Lightbulb, Loader2, Play, RotateCcw, Target, History, Info, Search } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
+import { cn } from '@/lib/utils';
 
 
 const initialGameState: GameState = {
@@ -46,6 +48,8 @@ const initialGameState: GameState = {
   errorMessage: null,
 };
 
+const DEBOUNCE_DELAY = 300;
+
 export default function WikiWanderPage() {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [startInput, setStartInput] = useState('');
@@ -53,14 +57,44 @@ export default function WikiWanderPage() {
   const { toast } = useToast();
   const { elapsedTime, resetTimer, startTimer, stopTimer } = useTimer(gameState.isGameActive);
 
+  const [startSuggestions, setStartSuggestions] = useState<string[]>([]);
+  const [targetSuggestions, setTargetSuggestions] = useState<string[]>([]);
+  const [isLoadingStartSuggestions, setIsLoadingStartSuggestions] = useState(false);
+  const [isLoadingTargetSuggestions, setIsLoadingTargetSuggestions] = useState(false);
+  const [showStartSuggestions, setShowStartSuggestions] = useState(false);
+  const [showTargetSuggestions, setShowTargetSuggestions] = useState(false);
+
+  const startInputRef = useRef<HTMLDivElement>(null);
+  const targetInputRef = useRef<HTMLDivElement>(null);
+
+
   useEffect(() => {
     if (gameState.isGameActive) {
       setGameState(prev => ({ ...prev, elapsedTime }));
     }
   }, [elapsedTime, gameState.isGameActive]);
 
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (startInputRef.current && !startInputRef.current.contains(event.target as Node)) {
+        setShowStartSuggestions(false);
+      }
+      if (targetInputRef.current && !targetInputRef.current.contains(event.target as Node)) {
+        setShowTargetSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+
   const handleSetArticle = async (type: 'start' | 'target', title?: string) => {
     setGameState(prev => ({ ...prev, isLoading: true, errorMessage: null }));
+    setShowStartSuggestions(false);
+    setShowTargetSuggestions(false);
     let summary: WikipediaArticleSummary | null = null;
 
     if (title) {
@@ -68,6 +102,7 @@ export default function WikiWanderPage() {
       if (!summary) {
         toast({ title: "Error", description: `Could not find article: ${title}`, variant: "destructive" });
         setGameState(prev => ({ ...prev, isLoading: false, errorMessage: `Article "${title}" not found.` }));
+        if (type === 'start') setStartInput(title); else setTargetInput(title); // Keep user input
         return;
       }
     } else {
@@ -82,7 +117,7 @@ export default function WikiWanderPage() {
     const article: WikiArticle = {
       title: summary.titles.normalized,
       displayTitle: summary.titles.display,
-      summary: summary.description || summary.extract.substring(0, 150) + '...',
+      summary: summary.description || summary.extract?.substring(0, 150) + '...',
     };
 
     if (type === 'start') {
@@ -93,6 +128,68 @@ export default function WikiWanderPage() {
       setTargetInput(article.displayTitle);
     }
   };
+
+  const debouncedSearch = useCallback(
+    (searchType: 'start' | 'target', searchTerm: string) => {
+      if (!searchTerm.trim()) {
+        if (searchType === 'start') setStartSuggestions([]); else setTargetSuggestions([]);
+        if (searchType === 'start') setShowStartSuggestions(false); else setShowTargetSuggestions(false);
+        return;
+      }
+
+      if (searchType === 'start') setIsLoadingStartSuggestions(true); else setIsLoadingTargetSuggestions(true);
+
+      searchArticles(searchTerm).then(suggestions => {
+        if (searchType === 'start') {
+          setStartSuggestions(suggestions);
+          setIsLoadingStartSuggestions(false);
+          setShowStartSuggestions(true);
+        } else {
+          setTargetSuggestions(suggestions);
+          setIsLoadingTargetSuggestions(false);
+          setShowTargetSuggestions(true);
+        }
+      }).catch(() => {
+         if (searchType === 'start') setIsLoadingStartSuggestions(false); else setIsLoadingTargetSuggestions(false);
+      });
+    },
+    [] 
+  );
+
+  const handleInputChange = (type: 'start' | 'target', value: string) => {
+    if (type === 'start') {
+      setStartInput(value);
+      if (value.length > 2) { // Only search if more than 2 chars
+        const timerId = setTimeout(() => debouncedSearch('start', value), DEBOUNCE_DELAY);
+        return () => clearTimeout(timerId);
+      } else {
+        setStartSuggestions([]);
+        setShowStartSuggestions(false);
+      }
+    } else {
+      setTargetInput(value);
+       if (value.length > 2) {
+        const timerId = setTimeout(() => debouncedSearch('target', value), DEBOUNCE_DELAY);
+        return () => clearTimeout(timerId);
+      } else {
+        setTargetSuggestions([]);
+        setShowTargetSuggestions(false);
+      }
+    }
+  };
+  
+  const handleSuggestionClick = (type: 'start' | 'target', title: string) => {
+    if (type === 'start') {
+      setStartInput(title);
+      setShowStartSuggestions(false);
+      handleSetArticle('start', title);
+    } else {
+      setTargetInput(title);
+      setShowTargetSuggestions(false);
+      handleSetArticle('target', title);
+    }
+  };
+
 
   const startGame = async () => {
     if (!gameState.startArticle || !gameState.targetArticle) {
@@ -130,7 +227,6 @@ export default function WikiWanderPage() {
     if (newArticleContent.isError) {
         toast({ title: "Navigation Error", description: `Could not load article: ${newArticleContent.displayTitle}`, variant: "destructive" });
         setGameState(prev => ({ ...prev, isLoading: false, errorMessage: `Failed to load ${newArticleContent.displayTitle}. You might be stuck.` }));
-        // Potentially allow user to go back or try again
         return;
     }
 
@@ -154,7 +250,7 @@ export default function WikiWanderPage() {
         duration: 10000,
       });
     }
-  }, [gameState.isGameActive, gameState.isLoading, gameState.clicks, gameState.targetArticle?.title, gameState.history, stopTimer, elapsedTime, toast]);
+  }, [gameState.isGameActive, gameState.isLoading, gameState.clicks, gameState.targetArticle?.title, gameState.history, stopTimer, elapsedTime, toast, formatTime]);
 
   const requestHint = async () => {
     if (!gameState.currentArticle || !gameState.targetArticle || gameState.isLoadingHint) return;
@@ -178,6 +274,8 @@ export default function WikiWanderPage() {
     setGameState(initialGameState);
     setStartInput('');
     setTargetInput('');
+    setStartSuggestions([]);
+    setTargetSuggestions([]);
     resetTimer();
   };
   
@@ -191,6 +289,37 @@ export default function WikiWanderPage() {
     });
   };
 
+  const renderSuggestions = (type: 'start' | 'target') => {
+    const suggestions = type === 'start' ? startSuggestions : targetSuggestions;
+    const isLoading = type === 'start' ? isLoadingStartSuggestions : isLoadingTargetSuggestions;
+    const show = type === 'start' ? showStartSuggestions : showTargetSuggestions;
+
+    if (!show || (!isLoading && suggestions.length === 0 && (type === 'start' ? startInput.length : targetInput.length) <=2)) return null;
+
+
+    return (
+      <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+        {isLoading ? (
+          <div className="p-2 text-sm text-muted-foreground flex items-center justify-center">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching...
+          </div>
+        ) : suggestions.length > 0 ? (
+          suggestions.map((title) => (
+            <div
+              key={title}
+              className="p-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+              onClick={() => handleSuggestionClick(type, title)}
+            >
+              {title}
+            </div>
+          ))
+        ) : (
+          (type === 'start' ? startInput.length : targetInput.length) > 2 && <div className="p-2 text-sm text-muted-foreground">No suggestions found.</div>
+        )}
+      </div>
+    );
+  };
+
   const renderGameSetup = () => (
     <Card className="shadow-lg">
       <CardHeader>
@@ -198,40 +327,63 @@ export default function WikiWanderPage() {
         <CardDescription>Choose your start and target Wikipedia articles.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-2">
+        <div className="space-y-2" ref={startInputRef}>
           <Label htmlFor="start-article">Start Article</Label>
-          <div className="flex space-x-2">
-            <Input
-              id="start-article"
-              placeholder="Enter start article or get random"
-              value={startInput}
-              onChange={(e) => setStartInput(e.target.value)}
-              disabled={gameState.isLoading}
-            />
-            <Button variant="outline" onClick={() => handleSetArticle('start', startInput)} disabled={gameState.isLoading || !startInput} className="whitespace-nowrap">
-              Set
-            </Button>
+          <div className="relative">
+            <div className="flex space-x-2">
+              <Input
+                id="start-article"
+                placeholder="Enter start article or get random"
+                value={startInput}
+                onChange={(e) => handleInputChange('start', e.target.value)}
+                onFocus={() => startInput.length > 2 && setShowStartSuggestions(true)}
+                disabled={gameState.isLoading}
+                className="flex-grow"
+              />
+              <Button 
+                variant="outline" 
+                onClick={() => handleSetArticle('start', startInput)} 
+                disabled={gameState.isLoading || !startInput || !!gameState.startArticle} 
+                className="whitespace-nowrap"
+                aria-label="Set Start Article"
+              >
+                Set
+              </Button>
+            </div>
+            {renderSuggestions('start')}
           </div>
-          <Button variant="secondary" onClick={() => handleSetArticle('start')} disabled={gameState.isLoading} className="w-full">
+          <Button variant="secondary" onClick={() => handleSetArticle('start')} disabled={gameState.isLoading} className="w-full mt-2">
             <Dices className="mr-2 h-4 w-4" /> Random Start Article
           </Button>
           {gameState.startArticle && <p className="text-sm text-muted-foreground mt-1">Selected: {gameState.startArticle.displayTitle}</p>}
         </div>
-        <div className="space-y-2">
+        
+        <div className="space-y-2" ref={targetInputRef}>
           <Label htmlFor="target-article">Target Article</Label>
-           <div className="flex space-x-2">
-            <Input
-              id="target-article"
-              placeholder="Enter target article or get random"
-              value={targetInput}
-              onChange={(e) => setTargetInput(e.target.value)}
-              disabled={gameState.isLoading}
-            />
-            <Button variant="outline" onClick={() => handleSetArticle('target', targetInput)} disabled={gameState.isLoading || !targetInput} className="whitespace-nowrap">
-              Set
-            </Button>
+           <div className="relative">
+            <div className="flex space-x-2">
+              <Input
+                id="target-article"
+                placeholder="Enter target article or get random"
+                value={targetInput}
+                onChange={(e) => handleInputChange('target', e.target.value)}
+                onFocus={() => targetInput.length > 2 && setShowTargetSuggestions(true)}
+                disabled={gameState.isLoading}
+                className="flex-grow"
+              />
+              <Button 
+                variant="outline" 
+                onClick={() => handleSetArticle('target', targetInput)} 
+                disabled={gameState.isLoading || !targetInput || !!gameState.targetArticle} 
+                className="whitespace-nowrap"
+                aria-label="Set Target Article"
+              >
+                Set
+              </Button>
+            </div>
+            {renderSuggestions('target')}
           </div>
-          <Button variant="secondary" onClick={() => handleSetArticle('target')} disabled={gameState.isLoading} className="w-full">
+          <Button variant="secondary" onClick={() => handleSetArticle('target')} disabled={gameState.isLoading} className="w-full mt-2">
             <Dices className="mr-2 h-4 w-4" /> Random Target Article
           </Button>
           {gameState.targetArticle && <p className="text-sm text-muted-foreground mt-1">Selected: {gameState.targetArticle.displayTitle}</p>}
@@ -244,7 +396,7 @@ export default function WikiWanderPage() {
           disabled={!gameState.startArticle || !gameState.targetArticle || gameState.isLoading}
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          {gameState.isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
+          {gameState.isLoading && (!gameState.isGameActive && !gameState.isGameWon) ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
           Start Wander
         </Button>
       </CardFooter>
@@ -317,7 +469,7 @@ export default function WikiWanderPage() {
           <span className="font-semibold text-accent">{formatTime(gameState.elapsedTime)}</span>
         </div>
         {gameState.hint && (
-          <Card className="mt-2 bg-secondary p-3">
+          <Card className="mt-2 bg-secondary/50 p-3 border border-border">
             <CardDescription className="text-xs text-secondary-foreground">
               <Info size={14} className="inline mr-1"/> {gameState.hint}
             </CardDescription>
@@ -325,7 +477,7 @@ export default function WikiWanderPage() {
         )}
          {gameState.errorMessage && (
           <Card className="mt-2 bg-destructive/10 border-destructive p-3">
-            <CardDescription className="text-xs text-destructive-foreground">
+            <CardDescription className="text-xs text-destructive"> {/* Ensure destructive-foreground is used if needed based on theme */}
                <AlertTriangle size={14} className="inline mr-1"/> {gameState.errorMessage}
             </CardDescription>
           </Card>
@@ -347,7 +499,15 @@ export default function WikiWanderPage() {
                     <ul className="space-y-1 list-decimal list-inside">
                         {gameState.history.map((article, index) => (
                             <li key={`${article.title}-${index}`} className="text-sm truncate text-muted-foreground">
-                                <span className={index === gameState.history.length - 1 ? 'font-semibold text-foreground' : ''}>
+                                <span className={cn(index === gameState.history.length - 1 ? 'font-semibold text-foreground' : '', 'hover:text-primary cursor-pointer')}
+                                      title={article.displayTitle}
+                                      onClick={() => {
+                                        if (index < gameState.history.length -1 && gameState.isGameActive) {
+                                            // Allow navigating back in history for a penalty or specific rule - not implemented yet
+                                            // For now, just an example of interaction
+                                            // handleNavigate(article.title); // This would need careful state management if implemented
+                                        }
+                                      }}>
                                     {article.displayTitle}
                                 </span>
                             </li>
@@ -371,14 +531,14 @@ export default function WikiWanderPage() {
             </div>
           </SidebarHeader>
           <SidebarContent className="p-4 space-y-6 flex-grow">
-            <ScrollArea className="h-full">
+            <ScrollArea className="h-full pr-2"> {/* Added pr-2 for scrollbar spacing */}
               {!gameState.isGameActive && !gameState.isGameWon ? renderGameSetup() : null}
               {(gameState.isGameActive || gameState.isGameWon) && (
                 <>
                   {renderGameStats()}
                   {renderHistory()}
                   {!gameState.isGameWon && gameState.isGameActive && (
-                    <div className="mt-6 sticky bottom-0 py-2 bg-sidebar">
+                    <div className="mt-6 sticky bottom-0 py-2 bg-sidebar rounded-md"> {/* Added rounded-md */}
                         {renderGamePlayControls()}
                     </div>
                   )}
@@ -402,17 +562,17 @@ export default function WikiWanderPage() {
             </div>
             
             {gameState.isGameWon && (
-              <Card className="mb-4 bg-green-50 border-green-500 shadow-lg">
+              <Card className="mb-4 bg-primary/5 border-primary/50 shadow-lg"> {/* Adjusted colors for softer win screen */}
                 <CardHeader className="items-center text-center">
-                  <CheckCircle2 className="h-16 w-16 text-green-600 mb-2" />
-                  <CardTitle className="text-3xl text-green-700">You Won!</CardTitle>
-                  <CardDescription className="text-green-600">
+                  <CheckCircle2 className="h-16 w-16 text-primary mb-2" />
+                  <CardTitle className="text-3xl text-primary">You Won!</CardTitle>
+                  <CardDescription className="text-foreground/80">
                     You successfully navigated from <span className="font-semibold">{gameState.startArticle?.displayTitle}</span> to <span className="font-semibold">{gameState.targetArticle?.displayTitle}</span>.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p>Clicks: {gameState.clicks}</p>
-                  <p>Time: {formatTime(gameState.elapsedTime)}</p>
+                  <p>Clicks: <span className='font-semibold text-accent'>{gameState.clicks}</span></p>
+                  <p>Time: <span className='font-semibold text-accent'>{formatTime(gameState.elapsedTime)}</span></p>
                 </CardContent>
                 <CardFooter className="flex justify-center">
                   <Button onClick={restartGame} size="lg">
@@ -438,10 +598,17 @@ export default function WikiWanderPage() {
                 </Card>
             )}
             
+             {gameState.isLoading && !gameState.currentArticle && !gameState.isGameActive && (
+                <div className="flex-grow flex flex-col items-center justify-center">
+                    <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                    <p className="mt-4 text-muted-foreground">Loading game...</p>
+                </div>
+            )}
+
             {(gameState.isGameActive || (gameState.isLoading && gameState.currentArticle)) && !gameState.isGameWon && (
               <ArticleDisplay
                 article={gameState.currentArticle}
-                isLoading={gameState.isLoading && !gameState.currentArticle?.htmlContent} // Show skeleton only if no content yet
+                isLoading={gameState.isLoading && !gameState.currentArticle?.htmlContent} 
                 onNavigate={handleNavigate}
               />
             )}
@@ -451,3 +618,4 @@ export default function WikiWanderPage() {
     </SidebarProvider>
   );
 }
+

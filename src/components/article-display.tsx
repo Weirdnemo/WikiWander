@@ -1,9 +1,11 @@
+
 'use client';
 
 import type { WikiArticle } from '@/lib/types';
 import { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface ArticleDisplayProps {
   article: WikiArticle | null;
@@ -17,63 +19,64 @@ export function ArticleDisplay({ article, isLoading, onNavigate }: ArticleDispla
   useEffect(() => {
     const currentContentRef = contentRef.current;
     if (currentContentRef && article?.htmlContent) {
-      // Sanitize or process HTML here if needed. For now, direct injection.
-      // This is a security risk with arbitrary HTML.
-      // A production app should use a sanitizer like DOMPurify.
       currentContentRef.innerHTML = article.htmlContent;
 
-      // Add event listeners to internal links
-      const links = currentContentRef.querySelectorAll('a[href^="/wiki/"]');
+      const links = currentContentRef.querySelectorAll('a');
       links.forEach(link => {
         const anchorElement = link as HTMLAnchorElement;
         const href = anchorElement.getAttribute('href');
+
         if (href) {
-          // Prevent navigation for non-article links (e.g., File, Special, Template)
-          if (href.startsWith('/wiki/File:') || href.startsWith('/wiki/Special:') || 
-              href.startsWith('/wiki/Help:') || href.startsWith('/wiki/Category:') ||
-              href.startsWith('/wiki/Wikipedia:') || href.startsWith('/wiki/Template:')) {
-            anchorElement.addEventListener('click', (e) => {
-              e.preventDefault();
-              // Optionally, open these in a new tab or notify user
-              window.open(`https://en.wikipedia.org${href}`, '_blank');
-            });
-            return;
+          if (href.startsWith('/wiki/')) {
+            // Prevent navigation for non-article links (e.g., File, Special, Template, Category, Help, Wikipedia:)
+            // These will still be styled as external-like links or muted links based on globals.css
+            if (href.startsWith('/wiki/File:') || 
+                href.startsWith('/wiki/Special:') || 
+                href.startsWith('/wiki/Help:') || 
+                href.startsWith('/wiki/Category:') ||
+                href.startsWith('/wiki/Wikipedia:') || 
+                href.startsWith('/wiki/Template:')) {
+              anchorElement.classList.add('non-article-wiki-link');
+              anchorElement.setAttribute('target', '_blank');
+              anchorElement.setAttribute('rel', 'noopener noreferrer');
+              anchorElement.addEventListener('click', (e) => {
+                e.preventDefault(); // Prevent any SPA-like behavior
+                window.open(`https://en.wikipedia.org${href}`, '_blank');
+              });
+            } else {
+              // This is an internal, navigable article link
+              anchorElement.classList.add('internal-wiki-link');
+              anchorElement.addEventListener('click', (e) => {
+                e.preventDefault();
+                const articleTitle = decodeURIComponent(href.replace('/wiki/', ''));
+                onNavigate(articleTitle);
+              });
+            }
+          } else if (href.startsWith('http://') || href.startsWith('https://')) {
+            // External links
+             if (!anchorElement.getAttribute('href')?.startsWith(window.location.origin)) {
+                 anchorElement.setAttribute('target', '_blank');
+                 anchorElement.setAttribute('rel', 'noopener noreferrer');
+                 anchorElement.classList.add('external-wiki-link');
+             }
+          } else if (href.startsWith('#')) {
+            // Anchor links / citations
+            anchorElement.classList.add('citation-wiki-link');
+            // Allow default behavior for anchor links (scrolling within page)
+            // Or, if they need to be specially handled:
+            // anchorElement.addEventListener('click', (e) => {
+            //   e.preventDefault();
+            //   // custom scroll or no-op
+            // });
           }
-
-          anchorElement.addEventListener('click', (e) => {
-            e.preventDefault();
-            const articleTitle = href.replace('/wiki/', '');
-            onNavigate(articleTitle);
-          });
         }
       });
-
-      // Make external links open in a new tab
-      const externalLinks = currentContentRef.querySelectorAll('a[href^="http"], a[href^="https"]');
-      externalLinks.forEach(link => {
-        const anchorElement = link as HTMLAnchorElement;
-        if (!anchorElement.getAttribute('href')?.startsWith(window.location.origin) && !anchorElement.getAttribute('href')?.startsWith('/wiki/')) {
-           anchorElement.setAttribute('target', '_blank');
-           anchorElement.setAttribute('rel', 'noopener noreferrer');
-        }
-      });
-
     }
-    // Cleanup listeners when component unmounts or article changes
-    return () => {
-      if (currentContentRef) {
-        const links = currentContentRef.querySelectorAll('a');
-        links.forEach(link => {
-          // A more robust way would be to store and remove specific listeners
-          // but for this example, replacing innerHTML on change handles cleanup.
-        });
-      }
-    };
   }, [article, onNavigate]);
 
   if (isLoading) {
     return (
-      <Card className="flex-grow overflow-auto">
+      <Card className="flex-grow overflow-auto h-full">
         <CardHeader>
           <Skeleton className="h-8 w-3/4" />
         </CardHeader>
@@ -90,19 +93,17 @@ export function ArticleDisplay({ article, isLoading, onNavigate }: ArticleDispla
 
   if (!article || article.isError) {
     return (
-      <Card className="flex-grow overflow-auto">
+      <Card className="flex-grow overflow-auto h-full">
         <CardHeader>
           <CardTitle>{article?.displayTitle || 'Article Error'}</CardTitle>
         </CardHeader>
         <CardContent className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none p-6">
-          <div ref={contentRef} dangerouslySetInnerHTML={{ __html: article?.htmlContent || '<p>No article loaded or an error occurred.</p>' }} />
+          <div dangerouslySetInnerHTML={{ __html: article?.htmlContent || '<p>No article loaded or an error occurred.</p>' }} />
         </CardContent>
       </Card>
     );
   }
   
-  // This div will host the potentially unsafe HTML.
-  // It should be styled to look like a Wikipedia page.
   return (
     <Card className="flex-grow overflow-auto h-full">
       <CardHeader>
@@ -113,8 +114,6 @@ export function ArticleDisplay({ article, isLoading, onNavigate }: ArticleDispla
           ref={contentRef} 
           className="wikipedia-content" 
           data-ai-hint="wikipedia article"
-          // Ensure that you have proper sanitization if content can be arbitrary HTML
-          // dangerouslySetInnerHTML={{ __html: article.htmlContent || '' }}
         />
       </CardContent>
     </Card>
