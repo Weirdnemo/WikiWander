@@ -247,7 +247,7 @@ export default function WikiWanderPage() {
       setGameState(prev => ({ ...prev, isGameWon: true, isGameActive: false }));
       // Toast for win is now handled by the AlertDialog
     }
-  }, [gameState.isGameActive, gameState.isLoading, gameState.clicks, gameState.targetArticle?.title, gameState.history, stopTimer, formatTime]);
+  }, [gameState.isGameActive, gameState.isLoading, gameState.clicks, gameState.targetArticle?.title, gameState.history, stopTimer, toast]);
 
   const requestHint = async () => {
     if (!gameState.currentArticle || !gameState.targetArticle || gameState.isLoadingHint) return;
@@ -326,7 +326,7 @@ export default function WikiWanderPage() {
       <CardContent className="space-y-6">
         <div className="space-y-2" ref={startInputRef}>
           <Label htmlFor="start-article">Start Article</Label>
-          <div className="relative">
+          <div className="relative flex items-center gap-2">
             <Input
               id="start-article"
               placeholder="Enter start article or get random"
@@ -334,9 +334,9 @@ export default function WikiWanderPage() {
               onChange={(e) => handleInputChange('start', e.target.value)}
               onFocus={() => startInput.length > 2 && setShowStartSuggestions(true)}
               disabled={gameState.isLoading}
-              className="w-full"
+              className="w-full flex-grow min-w-0"
             />
-            {renderSuggestions('start')}
+             {renderSuggestions('start')}
           </div>
           <Button variant="secondary" onClick={() => handleSetArticle('start')} disabled={gameState.isLoading} className="w-full mt-2">
             <Dices className="mr-2 h-4 w-4" /> Random Start Article
@@ -346,7 +346,7 @@ export default function WikiWanderPage() {
         
         <div className="space-y-2" ref={targetInputRef}>
           <Label htmlFor="target-article">Target Article</Label>
-           <div className="relative">
+           <div className="relative flex items-center gap-2">
             <Input
               id="target-article"
               placeholder="Enter target article or get random"
@@ -354,7 +354,7 @@ export default function WikiWanderPage() {
               onChange={(e) => handleInputChange('target', e.target.value)}
               onFocus={() => targetInput.length > 2 && setShowTargetSuggestions(true)}
               disabled={gameState.isLoading}
-              className="w-full"
+              className="w-full flex-grow min-w-0"
             />
             {renderSuggestions('target')}
           </div>
@@ -525,9 +525,9 @@ export default function WikiWanderPage() {
             </div>
           </SidebarHeader>
           <SidebarContent className="p-4 space-y-6 flex-grow">
-            <ScrollArea className="h-full pr-3">
+           
               {!gameState.isGameActive && !gameState.isGameWon ? renderGameSetup() : null}
-              {(gameState.isGameActive || gameState.isGameWon) && ( /* Show stats if game is active OR won (for overlay) */
+              {(gameState.isGameActive || gameState.isGameWon) && ( 
                 <>
                   {renderGameStats()}
                   {renderHistory()}
@@ -538,7 +538,7 @@ export default function WikiWanderPage() {
                   )}
                 </>
               )}
-            </ScrollArea>
+            
           </SidebarContent>
           <SidebarFooter className="p-4 border-t">
             <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} WikiWander. Powered by Wikipedia.</p>
@@ -546,7 +546,7 @@ export default function WikiWanderPage() {
         </Sidebar>
 
         <SidebarInset>
-          <div className="flex flex-col h-screen p-2 md:p-4 relative"> {/* Added relative for overlay positioning */}
+          <div className="flex flex-col h-screen p-2 md:p-4 relative"> 
             <div className="md:hidden p-2 border-b mb-2 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                     <Target className="h-6 w-6 text-primary" />
@@ -555,7 +555,7 @@ export default function WikiWanderPage() {
                 <SidebarTrigger />
             </div>
             
-            {/* Main content area: Welcome, Loading, or Article Display */}
+            
             {(!gameState.isGameActive && !gameState.isGameWon && !gameState.isLoading) ? (
                  <Card className="flex-grow flex flex-col items-center justify-center text-center p-8 bg-card shadow-xl rounded-xl">
                     <CardHeader>
@@ -583,7 +583,7 @@ export default function WikiWanderPage() {
               />
             ) : null}
 
-            {/* "You Won!" Dialog Overlay */}
+            
             {renderWinDialog()}
             
           </div>
